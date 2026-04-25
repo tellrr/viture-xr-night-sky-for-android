@@ -1,0 +1,66 @@
+plugins {
+    id 'com.android.application'
+    id 'org.jetbrains.kotlin.android'
+}
+
+android {
+    namespace 'com.viture.nightsky'
+    compileSdk 34
+
+    defaultConfig {
+        applicationId "com.viture.nightsky"
+        minSdk 28
+        // VITURE-SDK-1.0.7 registers its USB receiver with the pre-Android-14 API.
+        // Target 33 keeps that vendor receiver path usable on Android 14/15 phones.
+        targetSdk 33
+        versionCode 1
+        versionName "1.0.0"
+
+        externalNativeBuild {
+            cmake {
+                cppFlags "-std=c++17"
+            }
+        }
+
+        ndk {
+            abiFilters 'arm64-v8a', 'armeabi-v7a'
+        }
+    }
+
+    buildTypes {
+        release {
+            minifyEnabled false
+            proguardFiles getDefaultProguardFile('proguard-android-optimize.txt'), 'proguard-rules.pro'
+        }
+    }
+
+    compileOptions {
+        sourceCompatibility JavaVersion.VERSION_17
+        targetCompatibility JavaVersion.VERSION_17
+    }
+
+    kotlinOptions {
+        jvmTarget = '17'
+    }
+
+    externalNativeBuild {
+        cmake {
+            path file('src/main/cpp/CMakeLists.txt')
+        }
+    }
+
+    packaging {
+        resources {
+            excludes += ['/META-INF/{AL2.0,LGPL2.1}']
+        }
+    }
+}
+
+dependencies {
+    implementation 'androidx.core:core-ktx:1.13.1'
+    implementation 'androidx.appcompat:appcompat:1.7.0'
+    implementation 'androidx.documentfile:documentfile:1.0.1'
+    implementation 'com.google.android.material:material:1.12.0'
+
+    implementation fileTree(dir: 'libs', include: ['*.jar', '*.aar'])
+}

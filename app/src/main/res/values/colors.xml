@@ -1,0 +1,9 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <color name="night_canvas">#050811</color>
+    <color name="hud_panel">#CC07111C</color>
+    <color name="control_bar">#D9091523</color>
+    <color name="hud_border">#335A84B4</color>
+    <color name="hud_secondary">#BFD0DF</color>
+    <color name="status_bar_scrim">#000000</color>
+</resources>

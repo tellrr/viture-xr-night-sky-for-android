@@ -1,0 +1,9 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <string name="app_name">VITURE Night Sky</string>
+    <string name="hud_subtitle">Windows night-sky viewer ported to Android with live VITURE tracking and touch fallback.</string>
+    <string name="show_reference_cube">Reference Cube</string>
+    <string name="show_panorama">Panorama</string>
+    <string name="recenter">Recenter</string>
+    <string name="select_folder">Image Folder</string>
+</resources>

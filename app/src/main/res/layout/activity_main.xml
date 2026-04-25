@@ -1,0 +1,86 @@
+<?xml version="1.0" encoding="utf-8"?>
+<FrameLayout xmlns:android="http://schemas.android.com/apk/res/android"
+    android:layout_width="match_parent"
+    android:layout_height="match_parent"
+    android:background="@color/night_canvas">
+
+    <com.viture.nightsky.render.NightSkyGLSurfaceView
+        android:id="@+id/night_sky_surface"
+        android:layout_width="match_parent"
+        android:layout_height="match_parent"
+        android:keepScreenOn="true" />
+
+    <LinearLayout
+        android:layout_width="wrap_content"
+        android:layout_height="wrap_content"
+        android:layout_gravity="top|start"
+        android:layout_margin="16dp"
+        android:background="@drawable/hud_panel_bg"
+        android:elevation="8dp"
+        android:orientation="vertical"
+        android:padding="16dp">
+
+        <TextView
+            android:id="@+id/title_text"
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:text="@string/app_name"
+            android:textColor="@android:color/white"
+            android:textSize="20sp"
+            android:textStyle="bold" />
+
+        <TextView
+            android:id="@+id/subtitle_text"
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:layout_marginTop="6dp"
+            android:text="@string/hud_subtitle"
+            android:textColor="@color/hud_secondary"
+            android:textSize="12sp" />
+
+        <TextView
+            android:id="@+id/status_text"
+            android:layout_width="300dp"
+            android:layout_height="wrap_content"
+            android:layout_marginTop="14dp"
+            android:textColor="@android:color/white"
+            android:textSize="14sp" />
+    </LinearLayout>
+
+    <LinearLayout
+        android:layout_width="wrap_content"
+        android:layout_height="wrap_content"
+        android:layout_gravity="bottom|center_horizontal"
+        android:layout_margin="16dp"
+        android:background="@drawable/control_bar_bg"
+        android:elevation="10dp"
+        android:gravity="center"
+        android:orientation="horizontal"
+        android:paddingHorizontal="12dp"
+        android:paddingVertical="10dp">
+
+        <Button
+            android:id="@+id/scene_button"
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:minWidth="0dp"
+            android:text="@string/show_reference_cube" />
+
+        <Button
+            android:id="@+id/recenter_button"
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:layout_marginStart="12dp"
+            android:minWidth="0dp"
+            android:text="@string/recenter" />
+
+        <Button
+            android:id="@+id/folder_button"
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:layout_marginStart="12dp"
+            android:minWidth="0dp"
+            android:text="@string/select_folder" />
+    </LinearLayout>
+
+</FrameLayout>

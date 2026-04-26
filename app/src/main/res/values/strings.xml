@@ -1,9 +1,14 @@
 <?xml version="1.0" encoding="utf-8"?>
 <resources>
-    <string name="app_name">VITURE Night Sky</string>
+    <string name="app_name">VITURE PanoView</string>
     <string name="hud_subtitle">Windows night-sky viewer ported to Android with live VITURE tracking and touch fallback.</string>
     <string name="show_reference_cube">Reference Cube</string>
     <string name="show_panorama">Panorama</string>
     <string name="recenter">Recenter</string>
+    <string name="settings">Settings</string>
     <string name="select_folder">Image Folder</string>
+    <string name="enable_floor_tracking">Enable Floor Tracking</string>
+    <string name="disable_floor_tracking">Disable Floor Tracking</string>
+    <string name="reset_floor_origin">Reset Floor Origin</string>
+    <string name="floor_multiplier_default">Move 1x</string>
 </resources>

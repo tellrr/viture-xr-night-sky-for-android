@@ -1,5 +1,6 @@
 <?xml version="1.0" encoding="utf-8"?>
 <FrameLayout xmlns:android="http://schemas.android.com/apk/res/android"
+    android:id="@+id/main_root"
     android:layout_width="match_parent"
     android:layout_height="match_parent"
     android:background="@color/night_canvas">
@@ -11,6 +12,41 @@
         android:keepScreenOn="true" />
 
     <LinearLayout
+        android:id="@+id/floor_multiplier_panel"
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:layout_gravity="top|center_horizontal"
+        android:layout_marginStart="72dp"
+        android:layout_marginTop="8dp"
+        android:layout_marginEnd="72dp"
+        android:background="@drawable/control_bar_bg"
+        android:elevation="12dp"
+        android:gravity="center_vertical"
+        android:orientation="horizontal"
+        android:paddingHorizontal="14dp"
+        android:paddingVertical="8dp"
+        android:visibility="gone">
+
+        <TextView
+            android:id="@+id/floor_multiplier_label"
+            android:layout_width="72dp"
+            android:layout_height="wrap_content"
+            android:text="@string/floor_multiplier_default"
+            android:textColor="@android:color/white"
+            android:textSize="14sp"
+            android:textStyle="bold" />
+
+        <SeekBar
+            android:id="@+id/floor_multiplier_seek"
+            android:layout_width="0dp"
+            android:layout_height="wrap_content"
+            android:layout_weight="1"
+            android:max="9"
+            android:progress="0" />
+    </LinearLayout>
+
+    <LinearLayout
+        android:id="@+id/info_panel"
         android:layout_width="wrap_content"
         android:layout_height="wrap_content"
         android:layout_gravity="top|start"
@@ -40,12 +76,26 @@
 
         <TextView
             android:id="@+id/status_text"
-            android:layout_width="300dp"
+            android:layout_width="match_parent"
             android:layout_height="wrap_content"
             android:layout_marginTop="14dp"
             android:textColor="@android:color/white"
             android:textSize="14sp" />
     </LinearLayout>
+
+    <ImageButton
+        android:id="@+id/settings_button"
+        android:layout_width="52dp"
+        android:layout_height="52dp"
+        android:layout_gravity="top|end"
+        android:layout_margin="16dp"
+        android:background="@drawable/settings_button_bg"
+        android:contentDescription="@string/settings"
+        android:elevation="10dp"
+        android:padding="14dp"
+        android:scaleType="centerInside"
+        android:src="@drawable/ic_settings_24"
+        android:tint="@android:color/white" />
 
     <LinearLayout
         android:layout_width="wrap_content"
@@ -73,14 +123,6 @@
             android:layout_marginStart="12dp"
             android:minWidth="0dp"
             android:text="@string/recenter" />
-
-        <Button
-            android:id="@+id/folder_button"
-            android:layout_width="wrap_content"
-            android:layout_height="wrap_content"
-            android:layout_marginStart="12dp"
-            android:minWidth="0dp"
-            android:text="@string/select_folder" />
     </LinearLayout>
 
 </FrameLayout>

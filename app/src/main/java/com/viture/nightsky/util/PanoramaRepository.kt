@@ -14,6 +14,16 @@ data class PanoramaImage(
     val label: String
 )
 
+data class PanoramaLoadResult(
+    val image: PanoramaImage?,
+    val failureMessage: String? = null
+)
+
+private data class DecodeResult(
+    val bitmap: Bitmap?,
+    val message: String
+)
+
 data class PanoramaFolderState(
     val folderName: String,
     val currentIndex: Int,
@@ -65,9 +75,9 @@ class PanoramaRepository(private val context: Context) {
         return buildFolderState(images, index)
     }
 
-    fun loadPanorama(maxTextureSize: Int): PanoramaImage? {
-        loadSelectedFolderPanorama(maxTextureSize)?.let {
-            return it
+    fun loadPanorama(maxTextureSize: Int): PanoramaLoadResult {
+        if (hasSelectedFolder()) {
+            return loadSelectedFolderPanorama(maxTextureSize)
         }
 
         buildFileCandidates().firstNotNullOfOrNull { candidate ->
@@ -75,7 +85,7 @@ class PanoramaRepository(private val context: Context) {
                 PanoramaImage(bitmap, humanizeFileStem(candidate.nameWithoutExtension))
             }
         }?.let {
-            return it
+            return PanoramaLoadResult(it)
         }
 
         buildAssetCandidates().firstNotNullOfOrNull { assetPath ->
@@ -83,24 +93,39 @@ class PanoramaRepository(private val context: Context) {
                 PanoramaImage(bitmap, humanizeFileStem(assetPath.substringAfterLast('/').substringBeforeLast('.')))
             }
         }?.let {
-            return it
+            return PanoramaLoadResult(it)
         }
 
-        return null
+        return PanoramaLoadResult(null)
     }
 
-    private fun loadSelectedFolderPanorama(maxTextureSize: Int): PanoramaImage? {
+    private fun loadSelectedFolderPanorama(maxTextureSize: Int): PanoramaLoadResult {
         val images = selectedFolderImages()
         if (images.isEmpty()) {
-            return null
+            return PanoramaLoadResult(
+                null,
+                "Selected folder has no readable JPG/PNG/WebP images."
+            )
         }
 
         val index = preferences.getInt(KEY_FOLDER_INDEX, 0).coerceIn(0, images.lastIndex)
         val document = images[index]
-        val bitmap = decodeDocument(document, maxTextureSize) ?: return null
+        val decodeResult = decodeDocument(document, maxTextureSize)
+        val bitmap = decodeResult.bitmap
+        if (bitmap == null) {
+            return PanoramaLoadResult(
+                null,
+                "Could not decode ${document.name ?: "selected image"}: ${decodeResult.message}"
+            )
+        }
+
         val label = buildFolderState(images, index)?.displayLabel
             ?: humanizeFileStem(document.name.orEmpty().substringBeforeLast('.'))
-        return PanoramaImage(bitmap, label)
+        return PanoramaLoadResult(PanoramaImage(bitmap, label))
+    }
+
+    private fun hasSelectedFolder(): Boolean {
+        return preferences.contains(KEY_FOLDER_URI)
     }
 
     private fun selectedFolderImages(): List<DocumentFile> {
@@ -173,28 +198,94 @@ class PanoramaRepository(private val context: Context) {
         )
     }
 
-    private fun decodeDocument(document: DocumentFile, maxTextureSize: Int): Bitmap? {
+    private fun decodeDocument(document: DocumentFile, maxTextureSize: Int): DecodeResult {
+        val name = document.name ?: "selected image"
+        val type = document.type ?: "unknown type"
+        val size = document.length()
         val bounds = BitmapFactory.Options().apply {
             inJustDecodeBounds = true
         }
-        openDocument(document)?.use { stream ->
-            BitmapFactory.decodeStream(stream, null, bounds)
-        } ?: return null
 
-        if (bounds.outWidth <= 0 || bounds.outHeight <= 0) {
-            return null
+        try {
+            val streamOpened = openDocument(document)?.use { stream ->
+                BitmapFactory.decodeStream(stream, null, bounds)
+                true
+            } ?: false
+            if (!streamOpened) {
+                return decodeDocumentFileDescriptor(document, maxTextureSize, name, type, size)
+            }
+
+            if (bounds.outWidth <= 0 || bounds.outHeight <= 0) {
+                return DecodeResult(null, "Android could not read image bounds; type=$type size=$size bytes.")
+            }
+
+            val decodeOptions = BitmapFactory.Options().apply {
+                inPreferredConfig = Bitmap.Config.ARGB_8888
+                inSampleSize = computeInSampleSize(bounds.outWidth, bounds.outHeight, maxTextureSize)
+            }
+
+            val bitmap = openDocument(document)?.use { stream ->
+                BitmapFactory.decodeStream(stream, null, decodeOptions)
+            } ?: return DecodeResult(
+                null,
+                "Android could not decode pixels for ${bounds.outWidth}x${bounds.outHeight}; type=$type size=$size bytes."
+            )
+
+            return DecodeResult(
+                scaleDownIfNeeded(bitmap, maxTextureSize),
+                "$name decoded."
+            )
+        } catch (error: OutOfMemoryError) {
+            return DecodeResult(
+                null,
+                "out of memory decoding ${bounds.outWidth}x${bounds.outHeight}; try a smaller export."
+            )
+        } catch (error: Throwable) {
+            return DecodeResult(null, error.message ?: error.javaClass.simpleName)
+        }
+    }
+
+    private fun decodeDocumentFileDescriptor(
+        document: DocumentFile,
+        maxTextureSize: Int,
+        name: String,
+        type: String,
+        size: Long
+    ): DecodeResult {
+        val bounds = BitmapFactory.Options().apply {
+            inJustDecodeBounds = true
         }
 
-        val decodeOptions = BitmapFactory.Options().apply {
-            inPreferredConfig = Bitmap.Config.ARGB_8888
-            inSampleSize = computeInSampleSize(bounds.outWidth, bounds.outHeight, maxTextureSize)
+        try {
+            context.contentResolver.openFileDescriptor(document.uri, "r")?.use { descriptor ->
+                BitmapFactory.decodeFileDescriptor(descriptor.fileDescriptor, null, bounds)
+            } ?: return DecodeResult(null, "Android could not open the file stream or descriptor.")
+
+            if (bounds.outWidth <= 0 || bounds.outHeight <= 0) {
+                return DecodeResult(null, "Android could not read image bounds; type=$type size=$size bytes.")
+            }
+
+            val decodeOptions = BitmapFactory.Options().apply {
+                inPreferredConfig = Bitmap.Config.ARGB_8888
+                inSampleSize = computeInSampleSize(bounds.outWidth, bounds.outHeight, maxTextureSize)
+            }
+
+            val bitmap = context.contentResolver.openFileDescriptor(document.uri, "r")?.use { descriptor ->
+                BitmapFactory.decodeFileDescriptor(descriptor.fileDescriptor, null, decodeOptions)
+            } ?: return DecodeResult(
+                null,
+                "Android could not decode pixels for ${bounds.outWidth}x${bounds.outHeight}; type=$type size=$size bytes."
+            )
+
+            return DecodeResult(scaleDownIfNeeded(bitmap, maxTextureSize), "$name decoded.")
+        } catch (error: OutOfMemoryError) {
+            return DecodeResult(
+                null,
+                "out of memory decoding ${bounds.outWidth}x${bounds.outHeight}; try a smaller export."
+            )
+        } catch (error: Throwable) {
+            return DecodeResult(null, error.message ?: error.javaClass.simpleName)
         }
-
-        val bitmap = openDocument(document)?.use { stream ->
-            BitmapFactory.decodeStream(stream, null, decodeOptions)
-        } ?: return null
-
-        return scaleDownIfNeeded(bitmap, maxTextureSize)
     }
 
     private fun decodeFile(file: File, maxTextureSize: Int): Bitmap? {

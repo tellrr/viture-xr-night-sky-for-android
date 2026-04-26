@@ -1,6 +1,7 @@
 package com.viture.nightsky.render
 
 import android.graphics.Bitmap
+import com.viture.nightsky.math.Vector3
 import kotlin.math.abs
 import kotlin.math.asin
 import kotlin.math.atan2
@@ -11,6 +12,7 @@ import kotlin.math.min
 import kotlin.math.pow
 import kotlin.math.round
 import kotlin.math.sin
+import kotlin.math.sqrt
 
 object SkyAssets {
     private const val PI = 3.14159265358979323846f
@@ -175,6 +177,65 @@ object SkyAssets {
         return MeshData(vertices.toFloatArray(), indices.toShortArray())
     }
 
+    fun buildFloorTrailMesh(
+        points: List<Vector3>,
+        floorY: Float,
+        lineWidth: Float,
+        coordinateLimit: Float
+    ): MeshData? {
+        if (points.size < 2) {
+            return null
+        }
+
+        val vertices = ArrayList<Float>((points.size - 1) * 4 * 5)
+        val indices = ArrayList<Short>((points.size - 1) * 6)
+        val halfWidth = lineWidth * 0.5f
+
+        fun appendTrailVertex(point: Vector3, offsetX: Float, offsetZ: Float, u: Float, v: Float) {
+            appendVertex(
+                vertices,
+                point.x.coerceIn(-coordinateLimit, coordinateLimit) + offsetX,
+                floorY,
+                point.z.coerceIn(-coordinateLimit, coordinateLimit) + offsetZ,
+                u,
+                v
+            )
+        }
+
+        for (index in 0 until points.lastIndex) {
+            val start = points[index]
+            val end = points[index + 1]
+            val dx = end.x - start.x
+            val dz = end.z - start.z
+            val length = sqrt(dx * dx + dz * dz)
+            if (length < 0.001f) {
+                continue
+            }
+
+            val offsetX = -dz / length * halfWidth
+            val offsetZ = dx / length * halfWidth
+            val baseIndex = (vertices.size / 5).toShort()
+
+            appendTrailVertex(start, offsetX, offsetZ, 0.0f, 0.0f)
+            appendTrailVertex(start, -offsetX, -offsetZ, 0.0f, 1.0f)
+            appendTrailVertex(end, offsetX, offsetZ, 1.0f, 0.0f)
+            appendTrailVertex(end, -offsetX, -offsetZ, 1.0f, 1.0f)
+
+            indices += baseIndex
+            indices += (baseIndex + 1).toShort()
+            indices += (baseIndex + 2).toShort()
+            indices += (baseIndex + 2).toShort()
+            indices += (baseIndex + 1).toShort()
+            indices += (baseIndex + 3).toShort()
+        }
+
+        if (indices.isEmpty()) {
+            return null
+        }
+
+        return MeshData(vertices.toFloatArray(), indices.toShortArray())
+    }
+
     fun generateNightSkyBitmap(width: Int, height: Int): Bitmap {
         val pixels = IntArray(width * height)
         val galaxyPlaneNormalX = -0.34090984f
@@ -258,7 +319,11 @@ object SkyAssets {
         return Bitmap.createBitmap(pixels, width, height, Bitmap.Config.ARGB_8888)
     }
 
-    fun generateReferenceCubeBitmap(tileSize: Int): Bitmap {
+    fun generateReferenceCubeBitmap(
+        tileSize: Int,
+        minorGridDivisions: Float = 10.0f,
+        majorGridDivisions: Float = 4.0f
+    ): Bitmap {
         val width = tileSize * 3
         val height = tileSize * 2
         val pixels = IntArray(width * height)
@@ -289,8 +354,14 @@ object SkyAssets {
                     g = face.baseG
                     b = face.baseB
 
-                    val minorGrid = min(distanceToGridLine(localU, 10.0f), distanceToGridLine(localV, 10.0f))
-                    val majorGrid = min(distanceToGridLine(localU, 4.0f), distanceToGridLine(localV, 4.0f))
+                    val minorGrid = min(
+                        distanceToGridLine(localU, minorGridDivisions),
+                        distanceToGridLine(localV, minorGridDivisions)
+                    )
+                    val majorGrid = min(
+                        distanceToGridLine(localU, majorGridDivisions),
+                        distanceToGridLine(localV, majorGridDivisions)
+                    )
                     val border = min(min(localU, 1.0f - localU), min(localV, 1.0f - localV))
                     val centerLine = min(abs(localU - 0.5f), abs(localV - 0.5f))
                     val glyph = glyphMask(face.label, localU, localV)
